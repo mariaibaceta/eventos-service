@@ -1,0 +1,90 @@
+name: CI/CD eventos-service
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: despliegue-main
+  cancel-in-progress: false
+
+jobs:
+  pruebas:
+    name: Pruebas automatizadas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Compilar y ejecutar pruebas
+        run: ./mvnw -B verify
+
+  imagen:
+    name: Imagen Docker en Docker Hub
+    needs: pruebas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Construir y publicar
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/eventos-service:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/eventos-service:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  despliegue:
+    name: Despliegue en EC2
+    needs: imagen
+    runs-on: ubuntu-latest
+    env:
+      EC2_HOST: ${{ secrets.EC2_HOST }}
+      EC2_USER: ec2-user
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preparar acceso SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2.pem
+          chmod 600 ~/.ssh/ec2.pem
+          ssh-keyscan -T 15 -H "$EC2_HOST" >> ~/.ssh/known_hosts
+
+      - name: Montar EFS y ejecutar el contenedor
+        env:
+          IMAGEN: ${{ secrets.DOCKERHUB_USERNAME }}/eventos-service
+          TAG: ${{ github.sha }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          EFS_DNS: ${{ secrets.EFS_DNS }}
+          DH_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+          DH_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          # Las variables viajan por la entrada estándar del SSH, no por la línea de comandos
+          {
+            for v in IMAGEN TAG S3_BUCKET EFS_DNS DH_USER DH_TOKEN; do printf 'export %s=%q\n' "$v" "${!v}"; done
+            cat .github/scripts/desplegar-ec2.sh
+          } | ssh -i ~/.ssh/ec2.pem "$EC2_USER@$EC2_HOST" bash -s
+
+      - name: Limpiar llave
+        if: always()
+        run: rm -f ~/.ssh/ec2.pem

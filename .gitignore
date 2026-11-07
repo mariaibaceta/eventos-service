@@ -1,0 +1,24 @@
+target/
+.mvn/wrapper/maven-wrapper.jar
+
+### Configuración local y datos ###
+.env
+data/
+efs-local/
+*.pem
+*.log
+
+### IDE ###
+.idea
+*.iws
+*.iml
+*.ipr
+.vscode/
+.classpath
+.factorypath
+.project
+.settings
+.sts4-cache
+
+### Sistema ###
+.DS_Store

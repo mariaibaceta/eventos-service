@@ -1,0 +1,43 @@
+# Configuración sin secretos: todo lo variable se toma de variables de entorno (ver .env.example).
+spring:
+  application:
+    name: eventos-service
+  config:
+    import: optional:file:.env[.properties]
+  datasource:
+    url: ${DB_URL:jdbc:h2:file:./data/eventos}
+    username: ${DB_USERNAME:sa}
+    password: ${DB_PASSWORD:}
+  jpa:
+    hibernate:
+      ddl-auto: ${DDL_AUTO:update}
+    open-in-view: false
+    show-sql: false
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+server:
+  port: ${PORT:8080}
+  error:
+    include-stacktrace: never
+    include-message: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+app:
+  aws:
+    region: ${AWS_REGION:us-east-1}
+  s3:
+    bucket: ${S3_BUCKET:}
+  efs:
+    # En el contenedor es /app/efs (volumen /mnt/efs de la EC2, montado desde EFS).
+    base-path: ${EFS_BASE_PATH:./efs-local}
