@@ -106,7 +106,7 @@ Por eso la respuesta distingue `reservas`, `entradasReservadas`, `ventas`, `entr
 4. `PUT /api/tickets/{id}` aumenta la versión, recalcula el total si cambia la cantidad y reemplaza el archivo en la misma ruta.
 5. `DELETE /api/tickets/{id}` borra los archivos y conserva el registro para el historial y las estadísticas.
 
-El nombre de usuario forma parte de la ruta: se guarda en minúsculas y solo admite letras, números, punto, guion y guion bajo (3 a 40 caracteres).
+El nombre de usuario forma parte de la ruta: se guarda en minúsculas y solo admite letras, números, punto, guion y guion bajo (3 a 40 caracteres)..
 
 ## Configuración
 
