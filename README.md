@@ -182,3 +182,4 @@ Dockerfile                         Imagen multi-etapa, usuario sin privilegios
 | Estudiante | María Ibaceta Jofre |
 | Carrera | Analista Programador |
 | Asignatura | Desarrollo Cloud Native (CDY2204) |
+| Docente | Alonso Esteban Castillo Pizarro |
